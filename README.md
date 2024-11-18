@@ -25,7 +25,7 @@
 1. Клонируйте репозиторий на локальную машину:
    ```bash
    git clone https://github.com/yourusername/asteroids-game.git
-   cd asteroids-game```
+   cd asteroids-game
 2. Запустите игру:
-  ```bash
-  python game.py```
+   ```bash
+   python game.py
