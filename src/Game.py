@@ -9,10 +9,14 @@ from src.config import *
 
 class Game:
     def __init__(self, root):
+        self.thrusting = None
+        self.rotating_right = None
+        self.rotating_left = None
         self.root = root
         self.canvas = tk.Canvas(root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, bg="black")
         self.canvas.pack()
 
+        # Game state variables
         self.lives = LIVES
         self.score = INITIAL_SCORE
         self.running = False
@@ -23,6 +27,7 @@ class Game:
         self.score_text = self.canvas.create_text(10, 30, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
 
+        # Background and game objects
         self.asteroids = []
         self.rockets = []
         self.ship = None
@@ -33,11 +38,28 @@ class Game:
                                                     text="Click to Start")
         self.canvas.tag_bind(self.start_screen, "<Button-1>", self.start_game)
 
-        self.root.bind("<Left>", lambda event: self.rotate_ship(-SHIP_ROTATION_SPEED))
-        self.root.bind("<Right>", lambda event: self.rotate_ship(SHIP_ROTATION_SPEED))
-        self.root.bind("<Up>", lambda event: self.thrust_ship(True))
-        self.root.bind("<KeyRelease-Up>", lambda event: self.thrust_ship(False))
+        # Bind controls
+        self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
+        self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
+        self.root.bind("<KeyPress-Right>", lambda event: self.set_rotation(1))
+        self.root.bind("<KeyRelease-Right>", lambda event: self.set_rotation(0))
+        self.root.bind("<KeyPress-Up>", lambda event: self.set_thrust(True))
+        self.root.bind("<KeyRelease-Up>", lambda event: self.set_thrust(False))
         self.root.bind("<space>", lambda event: self.shoot_rocket())
+
+    def set_rotation(self, direction):
+        if direction == -1:
+            self.rotating_left = True
+            self.rotating_right = False
+        elif direction == 1:
+            self.rotating_left = False
+            self.rotating_right = True
+        else:
+            self.rotating_left = False
+            self.rotating_right = False
+
+    def set_thrust(self, thrusting):
+        self.thrusting = thrusting
 
     def start_game(self, event):
         if not self.running:
@@ -56,14 +78,25 @@ class Game:
 
     def update_game(self):
         if self.running:
+            # Update ship state
+            if self.rotating_left:
+                self.ship.rotate(-SHIP_ROTATION_SPEED)
+            if self.rotating_right:
+                self.ship.rotate(SHIP_ROTATION_SPEED)
+            self.ship.thrusting = self.thrusting
             self.ship.update()
+
+            # Update other objects
             self.update_rockets()
             self.update_asteroids()
             self.check_collisions()
             self.cleanup_objects()
+
+            # Schedule next frame
             self.root.after(16, self.update_game)
 
     def cleanup_objects(self):
+        # Remove expired rockets and destroyed asteroids
         for rocket in self.rockets:
             if rocket.expired:
                 self.canvas.delete(rocket.id)

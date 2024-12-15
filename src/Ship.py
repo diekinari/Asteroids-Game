@@ -22,7 +22,7 @@ class Ship:
             self.velocity_x += SHIP_THRUST * math.cos(math.radians(self.angle))
             self.velocity_y += SHIP_THRUST * math.sin(math.radians(self.angle))
         else:
-            self.velocity_x *= 0.99
+            self.velocity_x *= 0.99  # Apply friction
             self.velocity_y *= 0.99
 
         self.x = (self.x + self.velocity_x) % SCREEN_WIDTH
