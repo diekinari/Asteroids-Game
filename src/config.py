@@ -1,15 +1,9 @@
-# Параметры игры
-INITIAL_LIVES = 3  # Начальное количество жизней
-INITIAL_SCORE = 0  # Начальное количество очков
-
-WINDOW_WIDTH = 800  # Ширина окна игры
-WINDOW_HEIGHT = 600  # Высота окна игры
-GAME_TITLE = "Asteroids"  # Название окна игры
-
-
-BACKGROUND_COLOR = "black"  # Цвет фона
-TEXT_COLOR = "white"  # Цвет текста
-
-
-
-ASTEROID_BG_SPEED = 2
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+LIVES = 10
+INITIAL_SCORE = 0
+ASTEROID_SPEED = 2
+SHIP_THRUST = 0.1
+SHIP_ROTATION_SPEED = 40
+ROCKET_SPEED = 8
+ROCKET_LIFETIME = 100
