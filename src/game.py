@@ -13,7 +13,6 @@ class Game:
         self.canvas = tk.Canvas(root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, bg="black")
         self.canvas.pack()
 
-        # Game state variables
         self.lives = LIVES
         self.score = INITIAL_SCORE
         self.running = False
@@ -24,7 +23,6 @@ class Game:
         self.score_text = self.canvas.create_text(10, 30, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
 
-        # Background and game objects
         self.asteroids = []
         self.rockets = []
         self.ship = None
@@ -35,7 +33,6 @@ class Game:
                                                     text="Click to Start")
         self.canvas.tag_bind(self.start_screen, "<Button-1>", self.start_game)
 
-        # Bind controls
         self.root.bind("<Left>", lambda event: self.rotate_ship(-SHIP_ROTATION_SPEED))
         self.root.bind("<Right>", lambda event: self.rotate_ship(SHIP_ROTATION_SPEED))
         self.root.bind("<Up>", lambda event: self.thrust_ship(True))
@@ -63,7 +60,37 @@ class Game:
             self.update_rockets()
             self.update_asteroids()
             self.check_collisions()
+            self.cleanup_objects()
             self.root.after(16, self.update_game)
+
+    def cleanup_objects(self):
+        for rocket in self.rockets:
+            if rocket.expired:
+                self.canvas.delete(rocket.id)
+        for asteroid in self.asteroids:
+            if asteroid.destroyed:
+                self.canvas.delete(asteroid.id)
+        self.rockets = [r for r in self.rockets if not r.expired]
+        self.asteroids = [a for a in self.asteroids if not a.destroyed]
+
+    def check_collisions(self):
+        for rocket in self.rockets:
+            for asteroid in self.asteroids:
+                if self.distance(rocket.x, rocket.y, asteroid.x, asteroid.y) < asteroid.radius:
+                    rocket.expired = True
+                    asteroid.destroyed = True
+                    self.score += 1
+                    self.canvas.itemconfig(self.score_text, text=f"Score: {self.score}")
+                    break
+
+        for asteroid in self.asteroids:
+            if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
+                asteroid.destroyed = True
+                self.lives -= 1
+                self.canvas.itemconfig(self.lives_text, text=f"Lives: {self.lives}")
+                self.ship.respawn()
+                if self.lives <= 0:
+                    self.game_over()
 
     def update_rockets(self):
         for rocket in self.rockets:
@@ -82,27 +109,6 @@ class Game:
             dx = random.uniform(-ASTEROID_SPEED, ASTEROID_SPEED)
             dy = random.uniform(-ASTEROID_SPEED, ASTEROID_SPEED)
             self.asteroids.append(Asteroid(self.canvas, x, y, dx, dy))
-
-    def check_collisions(self):
-        # Check for collisions between rockets and asteroids
-        for rocket in self.rockets:
-            for asteroid in self.asteroids:
-                if self.distance(rocket.x, rocket.y, asteroid.x, asteroid.y) < asteroid.radius:
-                    rocket.expired = True
-                    asteroid.destroyed = True
-                    self.score += 1
-                    self.canvas.itemconfig(self.score_text, text=f"Score: {self.score}")
-                    break
-
-                    # Check for collisions between the ship and asteroids
-        for asteroid in self.asteroids:
-            if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
-                asteroid.destroyed = True
-                self.lives -= 1
-                self.canvas.itemconfig(self.lives_text, text=f"Lives: {self.lives}")
-                self.ship.respawn()
-                if self.lives <= 0:
-                    self.game_over()
 
     def game_over(self):
         self.running = False
