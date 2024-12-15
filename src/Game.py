@@ -16,29 +16,24 @@ class Game:
         self.canvas = tk.Canvas(root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, bg="black")
         self.canvas.pack()
 
-        # Game state variables
         self.lives = LIVES
         self.score = INITIAL_SCORE
         self.running = False
 
-        # UI elements
         self.lives_text = self.canvas.create_text(10, 10, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Lives: {self.lives}")
         self.score_text = self.canvas.create_text(10, 30, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
 
-        # Background and game objects
         self.asteroids = []
         self.rockets = []
         self.ship = None
 
-        # Start screen
         self.start_screen = self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
                                                     fill="white", font=("Arial", 24),
                                                     text="Click to Start")
         self.canvas.tag_bind(self.start_screen, "<Button-1>", self.start_game)
 
-        # Bind controls
         self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
         self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
         self.root.bind("<KeyPress-Right>", lambda event: self.set_rotation(1))
@@ -92,6 +87,9 @@ class Game:
             self.check_collisions()
             self.cleanup_objects()
 
+            # Spawn additional asteroids if needed
+            self.spawn_asteroids()
+
             # Schedule next frame
             self.root.after(16, self.update_game)
 
@@ -136,12 +134,15 @@ class Game:
         self.asteroids = [a for a in self.asteroids if not a.destroyed]
 
     def spawn_asteroids(self):
-        for _ in range(5):
+        num_to_spawn = max(0, MIN_ASTEROIDS - len(self.asteroids))
+        for _ in range(num_to_spawn):
             x = random.randint(0, SCREEN_WIDTH)
             y = random.randint(0, SCREEN_HEIGHT)
             dx = random.uniform(-ASTEROID_SPEED, ASTEROID_SPEED)
             dy = random.uniform(-ASTEROID_SPEED, ASTEROID_SPEED)
             self.asteroids.append(Asteroid(self.canvas, x, y, dx, dy))
+
+        self.asteroids = self.asteroids[:MAX_ASTEROIDS]
 
     def game_over(self):
         self.running = False
