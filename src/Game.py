@@ -131,7 +131,7 @@ class Game:
     def cleanup_objects(self):
         for rocket in self.rockets:
             if rocket.expired:
-                self.canvas.delete(rocket.id)
+                self.canvas.delete(rocket.sprite_id)
         for asteroid in self.asteroids:
             if asteroid.destroyed:
                 self.canvas.delete(asteroid.id)
