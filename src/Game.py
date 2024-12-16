@@ -48,16 +48,13 @@ class Game:
         self.root.bind("<KeyRelease-Up>", lambda event: self.set_thrust(False))
         self.root.bind("<space>", lambda event: self.shoot_rocket())
 
-        # Updated initialization and sprite loading
 
     def load_sprites(self):
         sprites = {}
-        # Load heart sprite
         heart_path = os.path.join(SPRITE_FOLDER, HEART_IMAGE_FILENAME)
         sprites["heart"] = ImageTk.PhotoImage(
             Image.open(heart_path).resize((HEART_IMAGE_SIZE, HEART_IMAGE_SIZE))
         )
-        # Load ship sprites
         static_ship_path = os.path.join(SPRITE_FOLDER, "static_ship.png")
         thrusting_ship_path = os.path.join(SPRITE_FOLDER, "thrusting_ship.png")
         sprites["static_ship"] = ImageTk.PhotoImage(Image.open(static_ship_path))
@@ -70,7 +67,6 @@ class Game:
             self.canvas.delete(widget)
         self.heart_widgets.clear()
 
-        # Place new hearts
         for i in range(self.lives):
             x_offset = 10 + i * (HEART_IMAGE_SIZE + 5)
             y_offset = 10
@@ -132,25 +128,34 @@ class Game:
         for rocket in self.rockets:
             if rocket.expired:
                 self.canvas.delete(rocket.sprite_id)
-        for asteroid in self.asteroids:
-            if asteroid.destroyed:
-                self.canvas.delete(asteroid.id)
         self.rockets = [r for r in self.rockets if not r.expired]
-        self.asteroids = [a for a in self.asteroids if not a.destroyed]
+
+        for asteroid in self.asteroids:
+            if asteroid.destroyed and not asteroid.exploding:
+                self.canvas.delete(asteroid.sprite_id)
+        self.asteroids = [a for a in self.asteroids if not (a.destroyed and not a.exploding)]
 
     def check_collisions(self):
         for rocket in self.rockets:
             for asteroid in self.asteroids:
                 if self.distance(rocket.x, rocket.y, asteroid.x, asteroid.y) < asteroid.radius:
+                    # print(f"Collision detected: Rocket {rocket.sprite_id} hit Asteroid {asteroid.sprite_id}")
                     rocket.expired = True
-                    asteroid.destroyed = True
+                    if not asteroid.exploding:
+                        # print(f"Asteroid {asteroid.sprite_id} starts explosion")
+                        asteroid.start_explosion()
                     self.score += 1
                     self.canvas.itemconfig(self.score_text, text=f"Score: {self.score}")
                     break
 
         for asteroid in self.asteroids:
+            if asteroid.exploding:
+                continue
+
             if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
-                asteroid.destroyed = True
+                # print(f"Collision detected: Ship collided with Asteroid {asteroid.sprite_id}")
+                if not asteroid.exploding:
+                    asteroid.start_explosion()
                 self.lives -= 1
                 self.update_heart_display()
                 self.ship.respawn()
@@ -165,7 +170,7 @@ class Game:
     def update_asteroids(self):
         for asteroid in self.asteroids:
             asteroid.update()
-        self.asteroids = [a for a in self.asteroids if not a.destroyed]
+        self.asteroids = [a for a in self.asteroids if not (a.destroyed and not a.exploding)]
 
     def spawn_asteroids(self):
         num_to_spawn = max(0, MIN_ASTEROIDS - len(self.asteroids))

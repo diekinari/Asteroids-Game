@@ -16,7 +16,7 @@ class Rocket:
         self.expired = False
 
         original_rocket_image = Image.open(os.path.join(SPRITE_FOLDER, "rocket.png"))
-        rotated_image = original_rocket_image.rotate(angle, resample=Image.BICUBIC)
+        rotated_image = original_rocket_image.rotate(angle)
         self.image = ImageTk.PhotoImage(rotated_image)
 
         self.sprite_id = self.canvas.create_image(self.x, self.y, image=self.image)
