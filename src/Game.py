@@ -1,4 +1,6 @@
 import tkinter as tk
+from PIL import Image, ImageTk
+import os
 import math
 import random
 
@@ -20,9 +22,10 @@ class Game:
         self.score = INITIAL_SCORE
         self.running = False
 
-        self.lives_text = self.canvas.create_text(10, 10, anchor="nw", fill="white",
-                                                  font=("Arial", 16), text=f"Lives: {self.lives}")
-        self.score_text = self.canvas.create_text(10, 30, anchor="nw", fill="white",
+        self.heart_images = []
+        self.heart_widgets = []
+
+        self.score_text = self.canvas.create_text(10, 45, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
 
         self.asteroids = []
@@ -34,6 +37,8 @@ class Game:
                                                     text="Click to Start")
         self.canvas.tag_bind(self.start_screen, "<Button-1>", self.start_game)
 
+        self.heart_image = self.load_heart_image()
+
         self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
         self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
         self.root.bind("<KeyPress-Right>", lambda event: self.set_rotation(1))
@@ -41,6 +46,24 @@ class Game:
         self.root.bind("<KeyPress-Up>", lambda event: self.set_thrust(True))
         self.root.bind("<KeyRelease-Up>", lambda event: self.set_thrust(False))
         self.root.bind("<space>", lambda event: self.shoot_rocket())
+
+    def load_heart_image(self):
+        heart_path = os.path.join(SPRITE_FOLDER, HEART_IMAGE_FILENAME)
+        img = Image.open(heart_path).resize((HEART_IMAGE_SIZE, HEART_IMAGE_SIZE))
+        return ImageTk.PhotoImage(img)
+
+    def update_heart_display(self):
+        # Clear existing heart widgets
+        for widget in self.heart_widgets:
+            self.canvas.delete(widget)
+        self.heart_widgets.clear()
+
+        # Place new hearts
+        for i in range(self.lives):
+            x_offset = 10 + i * (HEART_IMAGE_SIZE + 5)
+            y_offset = 10
+            heart = self.canvas.create_image(x_offset, y_offset, anchor="nw", image=self.heart_image)
+            self.heart_widgets.append(heart)
 
     def set_rotation(self, direction):
         if direction == -1:
@@ -68,7 +91,7 @@ class Game:
     def reset_game(self):
         self.lives = LIVES
         self.score = INITIAL_SCORE
-        self.canvas.itemconfig(self.lives_text, text=f"Lives: {self.lives}")
+        self.update_heart_display()
         self.canvas.itemconfig(self.score_text, text=f"Score: {self.score}")
 
     def update_game(self):
@@ -118,7 +141,7 @@ class Game:
             if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
                 asteroid.destroyed = True
                 self.lives -= 1
-                self.canvas.itemconfig(self.lives_text, text=f"Lives: {self.lives}")
+                self.update_heart_display()
                 self.ship.respawn()
                 if self.lives <= 0:
                     self.game_over()
