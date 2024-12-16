@@ -1,41 +1,52 @@
 import math
+from PIL import Image, ImageTk
+import os
 
 from src.Rocket import Rocket
 from src.config import *
 
 
 class Ship:
-    def __init__(self, canvas, x, y):
+    def __init__(self, canvas, x, y, sprites):
         self.canvas = canvas
         self.x = x
         self.y = y
-        self.angle = 0
+        self.angle = 270  # Adjusted to match the sprite's orientation
         self.radius = 15
         self.velocity_x = 0
         self.velocity_y = 0
         self.thrusting = False
-        self.id = self.canvas.create_polygon(x, y - self.radius, x - self.radius, y + self.radius,
-                                             x + self.radius, y + self.radius, fill="blue")
+        self.sprites = sprites
+        self.original_static_ship = Image.open(os.path.join(SPRITE_FOLDER, "new_static_ship.png"))
+        self.original_thrusting_ship = Image.open(os.path.join(SPRITE_FOLDER, "new_thrusting_ship.png"))
+        self.current_image = None
+        self.update_image()  # Initialize the sprite
+
+    def update_image(self):
+        """Update the ship's image based on its current angle and thrusting state."""
+        sprite_to_use = (
+            self.original_thrusting_ship if self.thrusting else self.original_static_ship
+        )
+        rotated_image = sprite_to_use.rotate(-(self.angle - 90), resample=Image.BICUBIC)  # Adjust for the offset
+        self.current_image = ImageTk.PhotoImage(rotated_image)
+        if hasattr(self, 'sprite_id'):
+            self.canvas.itemconfig(self.sprite_id, image=self.current_image)
+        else:
+            self.sprite_id = self.canvas.create_image(self.x, self.y, image=self.current_image)
 
     def update(self):
         if self.thrusting:
             self.velocity_x += SHIP_THRUST * math.cos(math.radians(self.angle))
             self.velocity_y += SHIP_THRUST * math.sin(math.radians(self.angle))
         else:
-            self.velocity_x *= 0.99
+            self.velocity_x *= 0.99  # Apply friction
             self.velocity_y *= 0.99
 
         self.x = (self.x + self.velocity_x) % SCREEN_WIDTH
         self.y = (self.y + self.velocity_y) % SCREEN_HEIGHT
 
-        nose_x = self.x + self.radius * math.cos(math.radians(self.angle))
-        nose_y = self.y + self.radius * math.sin(math.radians(self.angle))
-        left_x = self.x + self.radius * math.cos(math.radians(self.angle + 135))
-        left_y = self.y + self.radius * math.sin(math.radians(self.angle + 135))
-        right_x = self.x + self.radius * math.cos(math.radians(self.angle - 135))
-        right_y = self.y + self.radius * math.sin(math.radians(self.angle - 135))
-
-        self.canvas.coords(self.id, nose_x, nose_y, left_x, left_y, right_x, right_y)
+        self.update_image()
+        self.canvas.coords(self.sprite_id, self.x, self.y)
 
     def rotate(self, angle):
         self.angle = (self.angle + angle) % 360

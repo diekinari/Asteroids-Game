@@ -37,7 +37,8 @@ class Game:
                                                     text="Click to Start")
         self.canvas.tag_bind(self.start_screen, "<Button-1>", self.start_game)
 
-        self.heart_image = self.load_heart_image()
+        self.sprites = self.load_sprites()
+        self.heart_image = self.sprites["heart"]
 
         self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
         self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
@@ -47,10 +48,21 @@ class Game:
         self.root.bind("<KeyRelease-Up>", lambda event: self.set_thrust(False))
         self.root.bind("<space>", lambda event: self.shoot_rocket())
 
-    def load_heart_image(self):
+        # Updated initialization and sprite loading
+
+    def load_sprites(self):
+        sprites = {}
+        # Load heart sprite
         heart_path = os.path.join(SPRITE_FOLDER, HEART_IMAGE_FILENAME)
-        img = Image.open(heart_path).resize((HEART_IMAGE_SIZE, HEART_IMAGE_SIZE))
-        return ImageTk.PhotoImage(img)
+        sprites["heart"] = ImageTk.PhotoImage(
+            Image.open(heart_path).resize((HEART_IMAGE_SIZE, HEART_IMAGE_SIZE))
+        )
+        # Load ship sprites
+        static_ship_path = os.path.join(SPRITE_FOLDER, "static_ship.png")
+        thrusting_ship_path = os.path.join(SPRITE_FOLDER, "thrusting_ship.png")
+        sprites["static_ship"] = ImageTk.PhotoImage(Image.open(static_ship_path))
+        sprites["thrusting_ship"] = ImageTk.PhotoImage(Image.open(thrusting_ship_path))
+        return sprites
 
     def update_heart_display(self):
         # Clear existing heart widgets
@@ -84,7 +96,7 @@ class Game:
             self.running = True
             self.canvas.delete(self.start_screen)
             self.reset_game()
-            self.ship = Ship(self.canvas, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+            self.ship = Ship(self.canvas, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, self.sprites)
             self.spawn_asteroids()
             self.update_game()
 
@@ -117,7 +129,6 @@ class Game:
             self.root.after(16, self.update_game)
 
     def cleanup_objects(self):
-        # Remove expired rockets and destroyed asteroids
         for rocket in self.rockets:
             if rocket.expired:
                 self.canvas.delete(rocket.id)
@@ -187,7 +198,6 @@ class Game:
     @staticmethod
     def distance(x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
 
 if __name__ == "__main__":
     root = tk.Tk()
