@@ -52,11 +52,14 @@ class Asteroid:
 
         self.canvas.coords(self.sprite_id, self.x, self.y)
 
-    def start_explosion(self):
+    def start_explosion(self, mark_as_killer=False):
         # print(f"Asteroid {self.sprite_id} starting explosion.")
         self.exploding = True
         self.explosion_timer = 0
         self.canvas.itemconfig(self.sprite_id, image=self.explosion_images[0])
+
+        if not mark_as_killer:
+            self.destroyed = True
 
     def handle_explosion(self):
         # print(f"Asteroid {self.sprite_id} exploding. Timer: {self.explosion_timer}")

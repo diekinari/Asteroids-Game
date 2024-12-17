@@ -18,20 +18,24 @@ class Game:
         self.canvas = tk.Canvas(root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, bg="black")
         self.canvas.pack()
 
+        # Game state variables
         self.lives = LIVES
         self.score = INITIAL_SCORE
         self.running = False
 
+        # UI elements
         self.heart_images = []
         self.heart_widgets = []
 
         self.score_text = self.canvas.create_text(10, 45, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
 
+        # Background and game objects
         self.asteroids = []
         self.rockets = []
         self.ship = None
 
+        # Start screen
         self.start_screen = self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
                                                     fill="white", font=("Arial", 24),
                                                     text="Click to Start")
@@ -40,6 +44,7 @@ class Game:
         self.sprites = self.load_sprites()
         self.heart_image = self.sprites["heart"]
 
+        # Bind controls
         self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
         self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
         self.root.bind("<KeyPress-Right>", lambda event: self.set_rotation(1))
@@ -47,6 +52,9 @@ class Game:
         self.root.bind("<KeyPress-Up>", lambda event: self.set_thrust(True))
         self.root.bind("<KeyRelease-Up>", lambda event: self.set_thrust(False))
         self.root.bind("<space>", lambda event: self.shoot_rocket())
+
+        self.game_over_in_progress = False
+
 
     def load_sprites(self):
         sprites = {}
@@ -104,11 +112,12 @@ class Game:
     def update_game(self):
         if self.running:
             # Update ship state
-            if self.rotating_left:
-                self.ship.rotate(-SHIP_ROTATION_SPEED)
-            if self.rotating_right:
-                self.ship.rotate(SHIP_ROTATION_SPEED)
             if self.ship:
+                if self.rotating_left:
+                    self.ship.rotate(-SHIP_ROTATION_SPEED)
+                if self.rotating_right:
+                    self.ship.rotate(SHIP_ROTATION_SPEED)
+
                 self.ship.thrusting = self.thrusting
                 self.ship.update()
 
@@ -117,10 +126,9 @@ class Game:
             self.check_collisions()
             self.cleanup_objects()
 
-            # Spawn additional asteroids if needed
-            self.spawn_asteroids()
+            if not self.game_over_in_progress:
+                self.spawn_asteroids()
 
-            # Schedule next frame
             self.root.after(16, self.update_game)
 
     def cleanup_objects(self):
@@ -154,9 +162,9 @@ class Game:
                     continue
 
                 if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
-                    print(f"Collision detected: Ship collided with Asteroid {asteroid.sprite_id}")
+                    # print(f"Collision detected: Ship collided with Asteroid {asteroid.sprite_id}")
                     if not asteroid.exploding:
-                        asteroid.start_explosion()
+                        asteroid.start_explosion(mark_as_killer=True)
                     self.lives -= 1
                     self.update_heart_display()
                     if self.lives <= 0:
@@ -176,6 +184,9 @@ class Game:
         self.asteroids = [a for a in self.asteroids if not (a.destroyed and not a.exploding)]
 
     def spawn_asteroids(self):
+        if not self.running or self.game_over_in_progress:  # Prevent spawning during game over
+            return
+
         num_to_spawn = max(0, MIN_ASTEROIDS - len(self.asteroids))
         for _ in range(num_to_spawn):
             x = random.randint(0, SCREEN_WIDTH)
@@ -187,25 +198,37 @@ class Game:
         self.asteroids = self.asteroids[:MAX_ASTEROIDS]
 
     def game_over(self):
-        print("Game Over! Finalizing animations...")
+        # print("Game Over! Finalizing animations...")
+        self.game_over_in_progress = True
 
         # Remove the ship immediately
         if self.ship and hasattr(self.ship, 'sprite_id'):
             self.canvas.delete(self.ship.sprite_id)
             self.ship = None
 
-            # Wait for all asteroid explosions to complete before setting running to False
+        # Remove all asteroids except the killer
+
+        for asteroid in self.asteroids:
+            if not asteroid.exploding:  # Keep only the killer asteroid
+                self.canvas.delete(asteroid.sprite_id)
+        self.asteroids = [a for a in self.asteroids if a.exploding]
+
         self.wait_for_explosions()
 
+
     def wait_for_explosions(self):
+        """Wait until all explosions are finished before displaying the final Game Over screen."""
         explosions_active = any(asteroid.exploding for asteroid in self.asteroids)
 
         if explosions_active:
             self.root.after(100, self.wait_for_explosions)
         else:
+            # When no more explosions are active, clean up and display the Game Over title
             self.finalize_game_over()
 
+
     def finalize_game_over(self):
+        # Remove all remaining game elements
         for asteroid in self.asteroids:
             if hasattr(asteroid, 'sprite_id'):
                 self.canvas.delete(asteroid.sprite_id)
@@ -230,24 +253,27 @@ class Game:
                                 text=game_over_ascii, anchor="center")
 
         self.running = False
-        print("Game Over sequence completed.")
+        # print("Game Over sequence completed.")
+
 
     def rotate_ship(self, angle):
         if self.running:
             self.ship.rotate(angle)
 
+
     def thrust_ship(self, thrusting):
         if self.running:
             self.ship.thrusting = thrusting
+
 
     def shoot_rocket(self):
         if self.running:
             self.rockets.append(self.ship.shoot())
 
+
     @staticmethod
     def distance(x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
 
 if __name__ == "__main__":
     root = tk.Tk()
