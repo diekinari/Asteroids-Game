@@ -48,7 +48,6 @@ class Game:
         self.root.bind("<KeyRelease-Up>", lambda event: self.set_thrust(False))
         self.root.bind("<space>", lambda event: self.shoot_rocket())
 
-
     def load_sprites(self):
         sprites = {}
         heart_path = os.path.join(SPRITE_FOLDER, HEART_IMAGE_FILENAME)
@@ -109,10 +108,10 @@ class Game:
                 self.ship.rotate(-SHIP_ROTATION_SPEED)
             if self.rotating_right:
                 self.ship.rotate(SHIP_ROTATION_SPEED)
-            self.ship.thrusting = self.thrusting
-            self.ship.update()
+            if self.ship:
+                self.ship.thrusting = self.thrusting
+                self.ship.update()
 
-            # Update other objects
             self.update_rockets()
             self.update_asteroids()
             self.check_collisions()
@@ -139,28 +138,32 @@ class Game:
         for rocket in self.rockets:
             for asteroid in self.asteroids:
                 if self.distance(rocket.x, rocket.y, asteroid.x, asteroid.y) < asteroid.radius:
-                    # print(f"Collision detected: Rocket {rocket.sprite_id} hit Asteroid {asteroid.sprite_id}")
+                    print(f"Collision detected: Rocket {rocket.sprite_id} hit Asteroid {asteroid.sprite_id}")
                     rocket.expired = True
                     if not asteroid.exploding:
-                        # print(f"Asteroid {asteroid.sprite_id} starts explosion")
+                        print(f"Asteroid {asteroid.sprite_id} starts explosion")
                         asteroid.start_explosion()
                     self.score += 1
                     self.canvas.itemconfig(self.score_text, text=f"Score: {self.score}")
                     break
 
-        for asteroid in self.asteroids:
-            if asteroid.exploding:
-                continue
+        if self.ship:
+            for asteroid in self.asteroids:
+                # Skip exploding asteroids
+                if asteroid.exploding:
+                    continue
 
-            if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
-                # print(f"Collision detected: Ship collided with Asteroid {asteroid.sprite_id}")
-                if not asteroid.exploding:
-                    asteroid.start_explosion()
-                self.lives -= 1
-                self.update_heart_display()
-                self.ship.respawn()
-                if self.lives <= 0:
-                    self.game_over()
+                if self.distance(self.ship.x, self.ship.y, asteroid.x, asteroid.y) < asteroid.radius:
+                    print(f"Collision detected: Ship collided with Asteroid {asteroid.sprite_id}")
+                    if not asteroid.exploding:
+                        asteroid.start_explosion()
+                    self.lives -= 1
+                    self.update_heart_display()
+                    if self.lives <= 0:
+                        self.game_over()
+                        return
+                    else:
+                        self.ship.respawn()
 
     def update_rockets(self):
         for rocket in self.rockets:
@@ -184,9 +187,50 @@ class Game:
         self.asteroids = self.asteroids[:MAX_ASTEROIDS]
 
     def game_over(self):
+        print("Game Over! Finalizing animations...")
+
+        # Remove the ship immediately
+        if self.ship and hasattr(self.ship, 'sprite_id'):
+            self.canvas.delete(self.ship.sprite_id)
+            self.ship = None
+
+            # Wait for all asteroid explosions to complete before setting running to False
+        self.wait_for_explosions()
+
+    def wait_for_explosions(self):
+        explosions_active = any(asteroid.exploding for asteroid in self.asteroids)
+
+        if explosions_active:
+            self.root.after(100, self.wait_for_explosions)
+        else:
+            self.finalize_game_over()
+
+    def finalize_game_over(self):
+        for asteroid in self.asteroids:
+            if hasattr(asteroid, 'sprite_id'):
+                self.canvas.delete(asteroid.sprite_id)
+        self.asteroids.clear()
+
+        for rocket in self.rockets:
+            if hasattr(rocket, 'sprite_id'):
+                self.canvas.delete(rocket.sprite_id)
+        self.rockets.clear()
+
+        # Display Game Over in ASCII
+        game_over_ascii = """
+                  _____                         ____                 
+                 / ____|                       / __ \                
+                | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ 
+                | | |_ |/ _` | '_ ` _ \ / _ \ | |  | \ \ / / _ \ '__|
+                | |__| | (_| | | | | | |  __/ | |__| |\ V /  __/ |   
+                 \_____|\__,_|_| |_| |_|\___|  \____/  \_/ \___|_|   
+                """
+        self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
+                                fill="red", font=("Courier", 16, "bold"),
+                                text=game_over_ascii, anchor="center")
+
         self.running = False
-        self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, fill="red",
-                                font=("Arial", 24), text="Game Over")
+        print("Game Over sequence completed.")
 
     def rotate_ship(self, angle):
         if self.running:
@@ -203,6 +247,7 @@ class Game:
     @staticmethod
     def distance(x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
 
 if __name__ == "__main__":
     root = tk.Tk()

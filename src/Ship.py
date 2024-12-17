@@ -11,23 +11,25 @@ class Ship:
         self.canvas = canvas
         self.x = x
         self.y = y
-        self.angle = 270  # Adjusted to match the sprite's orientation
-        self.radius = 15
+        self.angle = 270
+        self.radius = 30
         self.velocity_x = 0
         self.velocity_y = 0
         self.thrusting = False
         self.sprites = sprites
-        self.original_static_ship = Image.open(os.path.join(SPRITE_FOLDER, "new_static_ship.png"))
-        self.original_thrusting_ship = Image.open(os.path.join(SPRITE_FOLDER, "new_thrusting_ship.png"))
+        self.original_static_ship = Image.open(os.path.join(SPRITE_FOLDER, "new_static_ship.png")).resize((60, 60),
+                                                                                                          Image.Resampling.LANCZOS)
+        self.original_thrusting_ship = Image.open(os.path.join(SPRITE_FOLDER, "new_thrusting_ship.png")).resize(
+            (60, 60), Image.Resampling.LANCZOS)
+
         self.current_image = None
-        self.update_image()  # Initialize the sprite
+        self.update_image()
 
     def update_image(self):
-        """Update the ship's image based on its current angle and thrusting state."""
         sprite_to_use = (
             self.original_thrusting_ship if self.thrusting else self.original_static_ship
         )
-        rotated_image = sprite_to_use.rotate(-(self.angle - 90), resample=Image.BICUBIC)  # Adjust for the offset
+        rotated_image = sprite_to_use.rotate(-(self.angle - 90), resample=Image.BICUBIC)
         self.current_image = ImageTk.PhotoImage(rotated_image)
         if hasattr(self, 'sprite_id'):
             self.canvas.itemconfig(self.sprite_id, image=self.current_image)
@@ -39,7 +41,7 @@ class Ship:
             self.velocity_x += SHIP_THRUST * math.cos(math.radians(self.angle))
             self.velocity_y += SHIP_THRUST * math.sin(math.radians(self.angle))
         else:
-            self.velocity_x *= 0.99  # Apply friction
+            self.velocity_x *= 0.99  
             self.velocity_y *= 0.99
 
         self.x = (self.x + self.velocity_x) % SCREEN_WIDTH
