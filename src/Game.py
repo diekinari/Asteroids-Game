@@ -32,13 +32,9 @@ class Game:
         self.rockets = []
         self.ship = None
 
-        self.start_screen = self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
-                                                    fill="white", font=("Arial", 24),
-                                                    text="Click to Start")
-        self.canvas.tag_bind(self.start_screen, "<Button-1>", self.start_game)
-
         self.sprites = self.load_sprites()
         self.heart_image = self.sprites["heart"]
+        self.setup_start_screen()
 
         self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
         self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
@@ -88,10 +84,11 @@ class Game:
     def set_thrust(self, thrusting):
         self.thrusting = thrusting
 
-    def start_game(self, event):
+    def start_game(self, event=None):
         if not self.running:
             self.running = True
-            self.canvas.delete(self.start_screen)
+            self.canvas.delete(self.start_screen_title)
+            self.canvas.delete(self.start_screen_clickable)
             self.reset_game()
             self.ship = Ship(self.canvas, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, self.sprites)
             self.spawn_asteroids()
@@ -103,9 +100,37 @@ class Game:
         self.update_heart_display()
         self.canvas.itemconfig(self.score_text, text=f"Score: {self.score}")
 
+    def setup_start_screen(self):
+        """Create the start screen UI."""
+        # ASCII title for the game
+        ascii_title = """
+
+         █████╗ ███████╗████████╗███████╗██████╗  ██████╗ ██╗██████╗ ███████╗
+        ██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔══██╗██╔═══██╗██║██╔══██╗██╔════╝
+        ███████║███████╗   ██║   █████╗  ██████╔╝██║   ██║██║██║  ██║███████╗
+        ██╔══██║╚════██║   ██║   ██╔══╝  ██╔══██╗██║   ██║██║██║  ██║╚════██║
+        ██║  ██║███████║   ██║   ███████╗██║  ██║╚██████╔╝██║██████╔╝███████║
+        ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚═════╝ ╚══════╝
+
+                """
+
+        self.start_screen_title = self.canvas.create_text(
+            SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3,
+            fill="cyan", font=("Courier", 14, "bold"),
+            text=ascii_title, anchor="center"
+        )
+
+        self.start_screen_clickable = self.canvas.create_text(
+            SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50,
+            fill="white", font=("Arial", 18, "bold"),
+            text="Click to Play", anchor="center"
+        )
+        self.canvas.tag_bind(self.start_screen_clickable, "<Button-1>", self.start_game)
+
+        self.update_heart_display()
+
     def update_game(self):
         if self.running:
-            # Update ship state
             if self.ship:
                 if self.rotating_left:
                     self.ship.rotate(-SHIP_ROTATION_SPEED)
