@@ -18,24 +18,20 @@ class Game:
         self.canvas = tk.Canvas(root, width=SCREEN_WIDTH, height=SCREEN_HEIGHT, bg="black")
         self.canvas.pack()
 
-        # Game state variables
         self.lives = LIVES
         self.score = INITIAL_SCORE
         self.running = False
 
-        # UI elements
         self.heart_images = []
         self.heart_widgets = []
 
-        self.score_text = self.canvas.create_text(10, 45, anchor="nw", fill="white",
+        self.score_text = self.canvas.create_text(10, 10, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
 
-        # Background and game objects
         self.asteroids = []
         self.rockets = []
         self.ship = None
 
-        # Start screen
         self.start_screen = self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
                                                     fill="white", font=("Arial", 24),
                                                     text="Click to Start")
@@ -44,7 +40,6 @@ class Game:
         self.sprites = self.load_sprites()
         self.heart_image = self.sprites["heart"]
 
-        # Bind controls
         self.root.bind("<KeyPress-Left>", lambda event: self.set_rotation(-1))
         self.root.bind("<KeyRelease-Left>", lambda event: self.set_rotation(0))
         self.root.bind("<KeyPress-Right>", lambda event: self.set_rotation(1))
@@ -54,7 +49,6 @@ class Game:
         self.root.bind("<space>", lambda event: self.shoot_rocket())
 
         self.game_over_in_progress = False
-
 
     def load_sprites(self):
         sprites = {}
@@ -75,7 +69,7 @@ class Game:
         self.heart_widgets.clear()
 
         for i in range(self.lives):
-            x_offset = 10 + i * (HEART_IMAGE_SIZE + 5)
+            x_offset = SCREEN_WIDTH - (i + 1) * (HEART_IMAGE_SIZE + 5) - 10
             y_offset = 10
             heart = self.canvas.create_image(x_offset, y_offset, anchor="nw", image=self.heart_image)
             self.heart_widgets.append(heart)
@@ -206,15 +200,14 @@ class Game:
             self.canvas.delete(self.ship.sprite_id)
             self.ship = None
 
-        # Remove all asteroids except the killer
-
         for asteroid in self.asteroids:
             if not asteroid.exploding:  # Keep only the killer asteroid
                 self.canvas.delete(asteroid.sprite_id)
         self.asteroids = [a for a in self.asteroids if a.exploding]
 
-        self.wait_for_explosions()
+        self.canvas.delete(self.score_text)
 
+        self.wait_for_explosions()
 
     def wait_for_explosions(self):
         """Wait until all explosions are finished before displaying the final Game Over screen."""
@@ -223,9 +216,7 @@ class Game:
         if explosions_active:
             self.root.after(100, self.wait_for_explosions)
         else:
-            # When no more explosions are active, clean up and display the Game Over title
             self.finalize_game_over()
-
 
     def finalize_game_over(self):
         # Remove all remaining game elements
@@ -239,41 +230,41 @@ class Game:
                 self.canvas.delete(rocket.sprite_id)
         self.rockets.clear()
 
-        # Display Game Over in ASCII
         game_over_ascii = """
-                  _____                         ____                 
-                 / ____|                       / __ \                
-                | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ 
-                | | |_ |/ _` | '_ ` _ \ / _ \ | |  | \ \ / / _ \ '__|
-                | |__| | (_| | | | | | |  __/ | |__| |\ V /  __/ |   
-                 \_____|\__,_|_| |_| |_|\___|  \____/  \_/ \___|_|   
+              _____                         ____                 
+             / ____|                       / __ \                
+            | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ 
+            | | |_ |/ _` | '_ ` _ \ / _ \ | |  | \ \ / / _ \ '__|
+            | |__| | (_| | | | | | |  __/ | |__| |\ V /  __/ |   
+             \_____|\__,_|_| |_| |_|\___|  \____/  \_/ \___|_|   
                 """
         self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
                                 fill="red", font=("Courier", 16, "bold"),
                                 text=game_over_ascii, anchor="center")
 
+        self.canvas.create_text(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50,
+                                fill="white", font=("Arial", 18, "bold"),
+                                text=f"Final Score: {self.score}", anchor="center")
+
         self.running = False
         # print("Game Over sequence completed.")
-
 
     def rotate_ship(self, angle):
         if self.running:
             self.ship.rotate(angle)
 
-
     def thrust_ship(self, thrusting):
         if self.running:
             self.ship.thrusting = thrusting
-
 
     def shoot_rocket(self):
         if self.running:
             self.rockets.append(self.ship.shoot())
 
-
     @staticmethod
     def distance(x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
