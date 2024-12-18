@@ -5,12 +5,15 @@ import math
 import random
 
 from src.Asteroid import Asteroid
+from src.BackgroundAsteroid import BackgroundAsteroid
 from src.Ship import Ship
 from src.config import *
 
 
 class Game:
     def __init__(self, root):
+        self.start_screen_clickable = None
+        self.start_screen_title = None
         self.thrusting = None
         self.rotating_right = None
         self.rotating_left = None
@@ -24,6 +27,7 @@ class Game:
 
         self.heart_images = []
         self.heart_widgets = []
+        self.background_asteroids = []
 
         self.score_text = self.canvas.create_text(10, 10, anchor="nw", fill="white",
                                                   font=("Arial", 16), text=f"Score: {self.score}")
@@ -45,6 +49,21 @@ class Game:
         self.root.bind("<space>", lambda event: self.shoot_rocket())
 
         self.game_over_in_progress = False
+
+    def setup_background_asteroids(self):
+        for _ in range(10):  # Number of asteroids
+            x = random.randint(0, SCREEN_WIDTH)
+            y = random.randint(0, SCREEN_HEIGHT)
+            size = random.randint(30, 60)
+            speed = random.uniform(1, 5)
+            asteroid = BackgroundAsteroid(self.canvas, x, y, size, speed)
+            self.background_asteroids.append(asteroid)
+
+    def update_background_asteroids(self):
+        for asteroid in self.background_asteroids:
+            asteroid.update()
+        if not self.running:  # Keep updating until the game starts
+            self.root.after(50, self.update_background_asteroids)
 
     def load_sprites(self):
         sprites = {}
@@ -89,6 +108,8 @@ class Game:
             self.running = True
             self.canvas.delete(self.start_screen_title)
             self.canvas.delete(self.start_screen_clickable)
+            for asteroid in self.background_asteroids:
+                asteroid.remove()
             self.reset_game()
             self.ship = Ship(self.canvas, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, self.sprites)
             self.spawn_asteroids()
@@ -102,6 +123,8 @@ class Game:
 
     def setup_start_screen(self):
         """Create the start screen UI."""
+        self.setup_background_asteroids()
+        self.update_background_asteroids()
         # ASCII title for the game
         ascii_title = """
 
@@ -151,6 +174,7 @@ class Game:
             self.root.after(16, self.update_game)
 
     def cleanup_objects(self):
+        # Remove expired rockets
         for rocket in self.rockets:
             if rocket.expired:
                 self.canvas.delete(rocket.sprite_id)
