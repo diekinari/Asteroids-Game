@@ -402,16 +402,6 @@ class Game:
         self.running = False
         print("Game Over sequence completed.")
 
-    def rotate_ship(self, angle):
-        """Поворачивает корабль на заданный угол."""
-        if self.running:
-            self.ship.rotate(angle)
-
-    def thrust_ship(self, thrusting):
-        """Включает или выключает тягу корабля."""
-        if self.running:
-            self.ship.thrusting = thrusting
-
     def shoot_rocket(self):
         """Выстреливает ракету из корабля."""
         if self.running:
