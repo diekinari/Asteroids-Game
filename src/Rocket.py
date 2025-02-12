@@ -53,6 +53,7 @@ class Rocket:
         """
         Обновляет положение ракеты, проверяет её время жизни и удаляет с холста, если срок истёк.
         """
+
         # Обновление позиции с учётом границ экрана
         self.x = (self.x + self.velocity_x) % SCREEN_WIDTH
         self.y = (self.y + self.velocity_y) % SCREEN_HEIGHT
